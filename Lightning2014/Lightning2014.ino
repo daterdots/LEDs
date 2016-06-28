@@ -7,8 +7,8 @@
 
 #include "FastLED.h"
 
-#define NUM_LEDS      60
-#define DATA_PIN      3
+#define NUM_LEDS      120
+#define DATA_PIN      11
 #define COLOR_ORDER   GRB
 #define CHIPSET       NEOPIXEL
 #define FREQUENCY     50                // controls the interval between strikes
@@ -36,9 +36,11 @@ void loop()
     if(flashCounter == 0) dimmer = 5;     // the brightness of the leader is scaled down by a factor of 5
     else dimmer = random8(1,3);           // return strokes are brighter than the leader
     
-    FastLED.showColor(CHSV(255, 0, 255/dimmer));
+    fill_solid(leds,NUM_LEDS,CHSV(255, 0, 255/dimmer));
+    FastLED.show();
     delay(random8(4,10));                 // each flash only lasts 4-10 milliseconds
-    FastLED.showColor(CHSV(255, 0, 0));
+    fill_solid(leds,NUM_LEDS,CHSV(0, 0, 0));
+    FastLED.show();
     
     if (flashCounter == 0) delay (150);   // longer delay until next flash after the leader
     delay(50+random8(100));               // shorter delay between strokes  

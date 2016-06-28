@@ -15,8 +15,8 @@
 #define COLOR_ORDER        GRB       // and RBG order
 #define BRIGHTNESS         250
 #define FRAMES_PER_SECOND  30
-#define COOLING            5         // controls how quickly LEDs dim
-#define TWINKLING          150       // controls how many new LEDs twinkle
+#define COOLING            20         // controls how quickly LEDs dim
+#define TWINKLING          100       // controls how many new LEDs twinkle
 #define FLICKER            50        // controls how "flickery" each individual LED is
 
 CRGB leds[NUM_LEDS];
@@ -29,6 +29,15 @@ long loops =               0;
 long deltaTimeTwinkle =    0;
 long deltaTimeSparkle =    0;
 boolean beatStarted =      false;
+
+int sensor = 0;
+int sensorValue = 0;
+int runningSensor = 0;
+int brightness = 0;
+uint8_t color = 0;
+int samples = 20 ;
+long rmsValue = 0;
+uint8_t mic_mean = 280;
 
 static byte heat[NUM_LEDS];
 ///////////////////////////////////////////////////////////////////////////////////////////
@@ -67,7 +76,7 @@ void loop()
     }
     else {
       long deltaTimeSparkle = millis() - nextBeat;
-      if ( deltaTimeSparkle > 0 ) Sparkle(); // if more time than 
+      if ( deltaTimeSparkle > 0 ) Sparkle(); // if more time than
     }
   }
 
@@ -79,28 +88,28 @@ void loop()
 }
 
 
-// This Twinkle subroutine creates a slow "twinkling" of the strip. 
-// It uses the same "heating" methodology as Mark Kriegman's "Fire2012" 
-// where pixels are "heated" and "cooled" and then the tempreature of 
-// each pixel is mapped to a color and brightness. 
+// This Twinkle subroutine creates a slow "twinkling" of the strip.
+// It uses the same "heating" methodology as Mark Kriegman's "Fire2012"
+// where pixels are "heated" and "cooled" and then the tempreature of
+// each pixel is mapped to a color and brightness.
 
-void Twinkle() 
+void Twinkle()
 {
   // Step 1. Create a randome number of seeds
   random16_add_entropy( random()); //random8() isn't very random, so this mixes things up a bit
-  seeds = random8(10,NUM_LEDS-10);
+  seeds = random8(10, NUM_LEDS - 10);
 
   // Step 2. "Cool" down every location on the strip a little
-  for( int i = 0; i < NUM_LEDS; i++) {
+  for ( int i = 0; i < NUM_LEDS; i++) {
     heat[i] = qsub8( heat[i], COOLING);
   }
 
   // Step 3. Make the seeds into heat on the string
   for ( int j = 0 ; j < seeds ; j++) {
-    if (random16() < TWINKLING) {
+    if (abs(analogRead(A5) - 265) > TWINKLING) {
       //again, we have to mix things up so the same locations don't always light up
-      random16_add_entropy( random()); 
-      heat[random8(NUM_LEDS)] = random8(50,255);
+      random16_add_entropy( random());
+      heat[random8(NUM_LEDS)] = random8(50, 255);
     }
   }
 
@@ -113,7 +122,7 @@ void Twinkle()
   }
 
   // Step 5. Map from heat cells to LED colors
-  for( int j = 0; j < NUM_LEDS; j++) 
+  for ( int j = 0; j < NUM_LEDS; j++)
   {
     leds[j] = TwinkleColor( heat[j] );
   }
@@ -123,14 +132,14 @@ void Twinkle()
 // Sparkle works very much like Twinkle, but with more LEDs lighting up at once
 void Sparkle() {
   // Step 1. Make a random numnber of seeds
-  seeds = random8(NUM_LEDS - 20 ,NUM_LEDS);
+  seeds = random8(NUM_LEDS - 20 , NUM_LEDS);
 
   // Step 2. Increase the heat at those locations
   for ( int i = 0 ; i < seeds ; i++) {
     {
       int pos = random8(NUM_LEDS);
       random16_add_entropy( random());
-      heat[pos] = random8(50,255);
+      heat[pos] = random8(50, 255);
     }
   }
   nextBeat += beatInterval; // assign the next time Twinkle() should happen
@@ -141,49 +150,49 @@ void Sparkle() {
 CHSV TwinkleColor( int temperature)
 {
   CHSV heatcolor;
-  heatcolor.hue = 60; 
-  heatcolor.saturation = 0; 
-  heatcolor.value = temperature; 
+  heatcolor.hue = 60;
+  heatcolor.saturation = 0;
+  heatcolor.value = temperature;
   return heatcolor;
 }
 
-// Use Mark Krigsman's orignal "HeatColor" code if you want to 
+// Use Mark Krigsman's orignal "HeatColor" code if you want to
 // get different colors at differet "temperatures"
 /*
 CRGB HeatColor( uint8_t temperature)
  {
  CRGB heatcolor;
- 
+
  // Scale 'heat' down from 0-255 to 0-191,
  // which can then be easily divided into three
  // equal 'thirds' of 64 units each.
  uint8_t t192 = scale8_video( temperature, 192);
- 
+
  // calculate a value that ramps up from
  // zero to 255 in each 'third' of the scale.
  uint8_t heatramp = t192 & 0x3F; // 0..63
  heatramp <<= 2; // scale up to 0..252
- 
+
  // now figure out which third of the spectrum we're in:
  if( t192 & 0x80) {
  // we're in the hottest third
  heatcolor.r = 255; // full red
  heatcolor.g = 255; // full green
  heatcolor.b = heatramp; // ramp up blue
- 
+
  } else if( t192 & 0x40 ) {
  // we're in the middle third
  heatcolor.r = 255; // full red
  heatcolor.g = heatramp; // ramp up green
  heatcolor.b = 0; // no blue
- 
+
  } else {
  // we're in the coolest third
  heatcolor.r = heatramp; // ramp up red
  heatcolor.g = 0; // no green
  heatcolor.b = 0; // no blue
  }
- 
+
  return heatcolor;
  }
  */

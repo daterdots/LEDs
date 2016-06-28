@@ -7,14 +7,14 @@
 ///////////////////////////////////////////////////////////////////////////////////////////
 #include "FastLED.h"
 
-#define NUM_LEDS          60
-#define DATA_PIN          3
+#define NUM_LEDS          120
+#define DATA_PIN          11
 #define COLOR_ORDER       GRB
 #define CHIPSET           NEOPIXEL
 #define BRIGHTNESS        255
-#define GRAVITY           -9.81              // Downward (negative) acceleration of gravity in m/s^2
+#define GRAVITY           -1              // Downward (negative) acceleration of gravity in m/s^2
 #define h0                1                  // Starting height, in meters, of the ball (strip length)
-#define NUM_BALLS         3                  // Number of bouncing balls you want (recommend < 7, but 20 is fun in its own way)
+#define NUM_BALLS         6                  // Number of bouncing balls you want (recommend < 7, but 20 is fun in its own way)
 
 float h[NUM_BALLS] ;                         // An array of heights
 float vImpact0 = sqrt( -2 * GRAVITY * h0 );  // Impact velocity of the ball when it hits the ground if "dropped" from the top of the strip
