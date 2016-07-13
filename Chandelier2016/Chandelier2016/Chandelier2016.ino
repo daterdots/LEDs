@@ -23,7 +23,7 @@ void hula();
 uint8_t numStrandStrip = 4;
 uint8_t globalBrightness = 255;
 #define led 13
-
+char mode = 'a';
 
 //define the leds as a matrix for doing animations, then as an array for final display
 CRGB leds[numLedStrand][numStrand];
@@ -56,6 +56,12 @@ void setup()
 
 void loop()
 {
+  while ( Serial.available() > 0 )
+  {
+    mode = Serial.read();
+  }
+
+
   //columnsAndRows();
   rainbowColumns();
   //america();
@@ -254,5 +260,19 @@ void transform()
         showLeds[column * numLedStrand + row] = leds[row][column];
       }
     }
+  }
+}
+
+void checkProgram() {
+  switch (program)
+  {
+    case 0:
+      cylon();
+      break;
+
+    case 1:
+      stochasticChill();
+      break;
+
   }
 }
