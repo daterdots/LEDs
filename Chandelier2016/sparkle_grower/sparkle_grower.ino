@@ -104,114 +104,51 @@ void fadeleds()
 {
   for (int row = 0; row < numLedStrand; row++) {
     for (int column = 0; column < numStrand; column++) {
-      leds[row][column].nscale8(230);
+      leds[row][column].nscale8(50);
     }
   }
 }
 
 void loop() {
-  unsigned int freqBin, x, y ;
-  float level = 0;
-  float bassLevel = 0;
-  float midLevel = 0;
-  float trebLevel = 0;
-
-  if (fft.available()) {
-    freqBin = 2;
-    for (int freq = 2 ; freq < 500 ; freq++ )
+  for (int column = 0; column < numStrand; column++)
+  {
+    for (int row = 0; row < numLedStrand; row++)
     {
-      level = level + fft.read(freq);
-
-      //fft.read(frequencyBegin, frequencyEnd);
-
-      if (freq < 20)
+      if (random16() > 65530)
       {
-        midLevel = midLevel + fft.read(freqBin, freqBin + frequencyBinsHorizontal[freq] - 1);
+        leds[row][column] += CHSV{0, 0, 255};
       }
-
-      else
+      if (leds[row][column] && row > 10 && row < numLedStrand-10 && column < numStrand - 1 && column > 0)
       {
-        trebLevel = trebLevel + fft.read(freqBin, freqBin + frequencyBinsHorizontal[freq] - 1);
-      }
-    }
+        tempLeds[row - 1][column - 1] += leds[row][column];
+        tempLeds[row - 1][column - 1].nscale8(5);
 
+        tempLeds[row + 1][column - 1] += leds[row][column];
+        tempLeds[row + 1][column - 1].nscale8(5);
 
-    ////// level
-    if (level > peakLevel)
-    {
-      peakLevel = level;
-    }
-    peakLevel = peakLevel - peakLevel / levelForget;
-    relativeLevel = level / peakLevel;
+        tempLeds[row - 1][column + 1] += leds[row][column];
+        tempLeds[row - 1][column + 1].nscale8(5);
 
-    ////// bass
-    if (bassLevel > peakBassLevel)
-    {
-      peakBassLevel = bassLevel;
-    }
-    peakBassLevel = peakBassLevel - peakBassLevel / levelForget;
-    relativeBassLevel = bassLevel / peakBassLevel;
-
-    ////// mid
-    if (midLevel > peakMidLevel)
-    {
-      peakMidLevel = midLevel;
-    }
-    peakMidLevel = peakMidLevel - peakMidLevel / levelForget;
-    relativeMidLevel = midLevel / peakMidLevel;
-
-    ////// treb
-    if (trebLevel > peakTrebLevel)
-    {
-      peakTrebLevel = trebLevel;
-    }
-    peakTrebLevel = peakTrebLevel - peakTrebLevel / levelForget;
-    relativeTrebLevel = trebLevel / peakTrebLevel;
-
-
-
-    //Serial.print("level is ");
-    //Serial.println(level);
-
-    //    for (int column = 0; column < numStrand; column++)
-    //    {
-    //      for (int row = 0; row < numLedStrand; row++)
-    //      {
-    //        if (level * numLedStrand * 10 > row + 1)
-    //        {
-    //          leds[row][column] = CRGB::White ;
-    //        }
-    //      }
-    //    }
-
-    for (int column = 0; column < numStrand; column++)
-    {
-      for (int row = 0; row < numLedStrand; row++)
-      {
-        if (relativeLevel * 255 * (row) / numLedStrand > random8() + random8())
-        {
-          leds[row][column] += CHSV(0, 0, random8(0, 255)) ;
-        }
-        //        if (relativeBassLevel * 255 > random8() + random8())
-        //        {
-        //          leds[row][column] += CHSV(0, 255, random8(255)) ;
-        //        }
-        //        if (relativeMidLevel * 255 > random8() + random8())
-        //        {
-        //          leds[row][column] += CHSV(80, 255, random8(255)) ;
-        //        }
-        //        if (relativeTrebLevel * 255 > random8() + random8())
-        //        {
-        //          leds[row][column] += CHSV(160, 255, random8(255)) ;
-        //        }
+        tempLeds[row + 1][column + 1] += leds[row][column];
+        tempLeds[row + 1][column + 1].nscale8(5);
+        
+        tempLeds[row][column]+=leds[row][column];
       }
     }
-
-    transform();
-    fadeleds();
-    FastLED.show();
   }
+  for (int column = 0; column < numStrand; column++)
+  {
+    for (int row = 0; row < numLedStrand; row++)
+    {
+      leds[row][column] = tempLeds[row][column] ;
+    }
+  }
+  transform();
+  fadeleds();
+  FastLED.show();
+  //delay(100);
 }
+
 
 
 // Run once from setup, the compute the vertical levels
