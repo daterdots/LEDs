@@ -39,6 +39,8 @@ int levelForget = 1000;
 float levels[numStrand] = {0};
 float relativeLevels[numStrand] = {0};
 float peakLevel = 0.0;
+
+
 float maxLevel = 0.0 ;
 
 int spins = 0;

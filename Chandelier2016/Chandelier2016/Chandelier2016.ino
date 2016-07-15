@@ -1,29 +1,65 @@
-void transform();
+/*
+   Chandelier2016 by Daniel Wilson
+*/
+
+
+#define USE_OCTOWS2811
+#include<OctoWS2811.h>
+#include<FastLED.h>
+#include <Audio.h>
+//#include <Wire.h>
+//#include <SD.h>
+//#include <SPI.h>
+
+// global definitions
+#define numStrip 8          //strips are contiguous physical LED chains
+#define numStrand 32        //strands are the vertical "strands" that make up the chandelier
+#define numLedStrip 300
+#define numLedStrand 75
+#define numLed 2400
+#define led 13
+uint8_t numStrandStrip = 4;
+uint8_t globalBrightness = 128;
+char mode = 'a';
+int levelForget = 1000;
+float levels[numStrand] = {0};
+float relativeLevels[numStrand] = {0};
+float peakLevel = 0.0;
+
+//prototype functions
+void transform(CRGB ledMatrix[numLedStrand][numStrand]);
 void columnsAndRows();
 void rainbowColumns();
+void spectrumSparkle();
 void america();
 void spiral();
 void hula();
+void spin();
+float maxarr(float arr[]);
+void fadeleds();
+
+//Audio library objects
+AudioInputAnalog         adc1(A3);       //xy=99,55
+AudioAnalyzeFFT1024      fft;            //xy=265,75
+AudioConnection          patchCord1(adc1, fft);
+
+int frequencyBinsHorizontal[numStrand + 1] = {
+  1,   1,  1,  1,  1,  1,  2,  2,
+  2,   3,  3,  4,  5,  5,  6,  7,
+  8,  10, 11, 13, 15, 17, 20, 23,
+  26, 30, 35, 40, 46, 53, 61, 70
+};
 
 //America
 #define SPARKLER_SPARKING           240
 #define SPARKLER_CHILL_SPARKING     10
 #define SPARKLER_COOLING            200
 
-#define USE_OCTOWS2811
-#include<OctoWS2811.h>
-#include<FastLED.h>
-
-#define numStrip 8          //strips are contiguous physical LED chains
-#define numStrand 32        //strands are the vertical "strands" that make up the chandelier
-#define numLedStrip 300
-#define numLedStrand 75
-#define numLed 2400
-
-uint8_t numStrandStrip = 4;
-uint8_t globalBrightness = 255;
-#define led 13
-char mode = 'a';
+//Spectrum Analyzer
+int spins = 0;
+int theta = 0;
+float maxLevel = 0.0 ;
+unsigned int spinSpeed = 5;//inversely proportional to spin speed
 
 //define the leds as a matrix for doing animations, then as an array for final display
 CRGB leds[numLedStrand][numStrand];
@@ -40,6 +76,7 @@ int a = 0;
 
 void setup()
 {
+  AudioMemory(12);
   LEDS.addLeds<OCTOWS2811>(showLeds, numLedStrip);
   LEDS.setBrightness(globalBrightness);
   Serial.begin(9600);
@@ -61,9 +98,10 @@ void loop()
     mode = Serial.read();
   }
 
+  checkProgram();
 
   //columnsAndRows();
-  rainbowColumns();
+  //rainbowColumns();
   //america();
   //spiral();
   //hula();
@@ -75,7 +113,7 @@ void columnsAndRows() {
     for (int row = 0; row < numLedStrand; row++)
     {
       leds[row][column] = CRGB::White;
-      transform();
+      transform(leds);
       FastLED.show();
       //delay(10);
       leds[row][column] = CRGB::Black;
@@ -90,7 +128,7 @@ void columnsAndRows() {
     for (int column = 0; column < numStrand; column++)
     {
       leds[row][column] = CRGB::White;
-      transform();
+      transform(leds);
       FastLED.show();
       //delay(10);
       leds[row][column] = CRGB::Black;
@@ -114,7 +152,7 @@ void rainbowColumns()
         leds[row][column] = tempLeds[row];
       }
     }
-    transform();
+    transform(leds);
     FastLED.show();
     //delay(10);
   }
@@ -193,7 +231,7 @@ void spiral()
     {
       leds[row][column] = CRGB::White ;
     }
-    transform();
+    transform(leds);
     FastLED.show();
     delay(10);
     for ( int row = 0 ; row < numLedStrand ; row++)
@@ -222,7 +260,7 @@ void hula()
         leds[row][column].nscale8(200);
       }
     }
-    transform();
+    transform(leds);
     FastLED.show();
   }
 
@@ -239,12 +277,86 @@ void hula()
         leds[row][column].nscale8(200);
       }
     }
-    transform();
+    transform(leds);
     FastLED.show();
   }
 }
 
-void transform()
+void spectrumSparkle() {
+  for ( theta = 0 ; theta < numStrand * spinSpeed ; theta ++)
+  {
+    unsigned int freqBin, x, y ;
+    float level;
+
+    if (fft.available())
+    {
+      freqBin = 2; //ignore the first two bins which contain DC offsets
+      for (x = 0; x < numStrand; x++) {
+        levels[x] = fft.read(freqBin, freqBin + frequencyBinsHorizontal[x] - 1);
+        freqBin = freqBin + frequencyBinsHorizontal[x];
+      }
+    }
+
+    maxLevel = maxarr(levels) ;
+    if ( maxLevel > peakLevel)
+    {
+      peakLevel = maxLevel;
+    }
+
+    Serial.print("max level = ");
+    Serial.println(maxLevel);
+    Serial.print("peak level = ");
+    Serial.println(peakLevel);
+
+    //relativeLevels = levels / peakLevel ;
+    for (x = 0; x < numStrand; x++) {
+      relativeLevels[x] = levels[x] / peakLevel ;
+    }
+    peakLevel = peakLevel - peakLevel / levelForget;
+
+    //printFFT();
+
+    for (int row = 0 ; row < numLedStrand ; row++ )
+    {
+      for (int column = 0 ; column < numStrand / 2 ; column++ )
+      {
+        if ( ((relativeLevels[2 * column] + relativeLevels[2 * column + 1]) / 2 * numLedStrand) > row)
+        {
+          leds[numLedStrand - row - 1][column] = CHSV(column * 16 - 8 , 255 - 3.4 * row , 255 - 3 * row);
+          leds[numLedStrand - row - 1][numStrand - 1 - column] = CHSV(column * 16 - 8 , 255 - 3.4 * row , 255 - 3 * row);
+        }
+        else
+        {
+          if (random8(maxLevel / peakLevel * 255, 255) > 253  && random8(maxLevel / peakLevel * 255, 255) > 253 && random8() > 250)
+          {
+            leds[numLedStrand - row - 1][column] += CHSV(0, 0, random8(150, 255)) ;
+            leds[numLedStrand - row - 1][numStrand - 1 - column] += CHSV(0, 0, random8(150, 255)) ;
+          }
+          else {}
+        }
+      }
+    }
+    
+    spin();
+    transform(tempLeds);
+    FastLED.show();
+    fadeleds();
+  }
+}
+
+void spin()
+{
+  for ( int row = 0 ; row < numLedStrand ; row ++ )
+  {
+    for ( int column = 0 ; column < numStrand ; column ++ )
+    {
+      int newColumn = (column + theta / spinSpeed) % numStrand;
+      tempLeds[row][newColumn] = leds[row][column];
+    }
+  }
+}
+
+void transform(CRGB ledMatrix[numLedStrand][numStrand])
 {
   for (int column = 0; column < numStrand; column++)
   {
@@ -253,20 +365,29 @@ void transform()
     {
       if ((column - strip * numStrandStrip) % 2 == 1) //check to see if this is the strip that goes bottom to top
       {
-        showLeds[column * numLedStrand + row] = leds[numLedStrand - row - 1][column];
+        showLeds[column * numLedStrand + row] = ledMatrix[numLedStrand - row - 1][column];
       }
       else
       {
-        showLeds[column * numLedStrand + row] = leds[row][column];
+        showLeds[column * numLedStrand + row] = ledMatrix[row][column];
       }
     }
   }
 }
 
+void fadeleds()
+{
+  for (int row = 0; row < numLedStrand; row++) {
+    for (int column = 0; column < numStrand; column++) {
+      leds[row][column].nscale8(245);
+    }
+  }
+}
+
 void checkProgram() {
-  switch (program)
+  switch (mode)
   {
-    case 0:
+    case c:
       cylon();
       break;
 

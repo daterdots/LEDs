@@ -1,9 +1,9 @@
-
-void computeVerticalLevels();
+//void computeVerticalLevels();
 void transform();
 void transformTemp();
 void black();
 void spin();
+void fadeTempLeds();
 
 #include <Audio.h>
 #include <Wire.h>
@@ -28,6 +28,8 @@ const unsigned int myColor = 0x400020;
 #define numLed 2400
 uint8_t globalBrightness = 128;
 uint8_t numStrandStrip = 4;
+
+int spreadFade = 100;
 
 int spins = 0;
 int theta = 0;
@@ -84,7 +86,7 @@ void setup() {
   AudioMemory(12);
 
   // compute the vertical thresholds before starting
-  computeVerticalLevels();
+  //  computeVerticalLevels();
 
   // turn on the display
   //delay(3000);
@@ -104,7 +106,16 @@ void fadeleds()
 {
   for (int row = 0; row < numLedStrand; row++) {
     for (int column = 0; column < numStrand; column++) {
-      leds[row][column].nscale8(50);
+      leds[row][column].nscale8(252);
+    }
+  }
+}
+
+void fadeTempLeds()
+{
+  for (int row = 0; row < numLedStrand; row++) {
+    for (int column = 0; column < numStrand; column++) {
+      tempLeds[row][column].nscale8(40);
     }
   }
 }
@@ -114,56 +125,67 @@ void loop() {
   {
     for (int row = 0; row < numLedStrand; row++)
     {
-      if (random16() > 65530)
+      if (random8() > 252 && random8() > 252)
       {
-        leds[row][column] += CHSV{0, 0, 255};
+        leds[row][column] += CHSV{random(0,255), random8(), 255};
       }
-      if (leds[row][column] && row > 10 && row < numLedStrand-10 && column < numStrand - 1 && column > 0)
+
+      if (row > 1 && row < numLedStrand - 2 && column > 0 && column < numStrand - 1 )
       {
-        tempLeds[row - 1][column - 1] += leds[row][column];
-        tempLeds[row - 1][column - 1].nscale8(5);
+        if (column == 0) {
+          tempLeds[row - 1][numStrand - 1] += leds[row][column];
+          tempLeds[row + 1][numStrand - 1] += leds[row][column];
+          tempLeds[row - 1][column + 1] += leds[row][column];
+          tempLeds[row + 1][column + 1] += leds[row][column];
+          tempLeds[row - 2][numStrand - 1] += leds[row][column];
+          tempLeds[row + 2][numStrand - 1] += leds[row][column];
+          tempLeds[row - 2][column + 1] += leds[row][column];
+          tempLeds[row + 2][column + 1] += leds[row][column];
+        }
 
-        tempLeds[row + 1][column - 1] += leds[row][column];
-        tempLeds[row + 1][column - 1].nscale8(5);
+        else if (column == numStrand - 1) {
+          tempLeds[row - 1][column - 1] += leds[row][column];
+          tempLeds[row + 1][column - 1] += leds[row][column];
+          tempLeds[row - 1][0] += leds[row][column];
+          tempLeds[row + 1][0] += leds[row][column];
+          tempLeds[row - 2][column - 1] += leds[row][column];
+          tempLeds[row + 2][column - 1] += leds[row][column];
+          tempLeds[row - 2][0] += leds[row][column];
+          tempLeds[row + 2][0] += leds[row][column];
+        }
 
-        tempLeds[row - 1][column + 1] += leds[row][column];
-        tempLeds[row - 1][column + 1].nscale8(5);
+        else {
+          tempLeds[row - 1][column - 1] += leds[row][column];
+          tempLeds[row + 1][column - 1] += leds[row][column];
+          tempLeds[row - 1][column + 1] += leds[row][column];
+          tempLeds[row + 1][column + 1] += leds[row][column];
+          tempLeds[row - 2][column - 1] += leds[row][column];
+          tempLeds[row + 2][column - 1] += leds[row][column];
+          tempLeds[row - 2][column + 1] += leds[row][column];
+          tempLeds[row + 2][column + 1] += leds[row][column];
+        }
 
-        tempLeds[row + 1][column + 1] += leds[row][column];
-        tempLeds[row + 1][column + 1].nscale8(5);
-        
-        tempLeds[row][column]+=leds[row][column];
+
+        //tempLeds[row][column] += leds[row][column];
       }
     }
   }
+  fadeTempLeds();
   for (int column = 0; column < numStrand; column++)
   {
     for (int row = 0; row < numLedStrand; row++)
     {
       leds[row][column] = tempLeds[row][column] ;
+      tempLeds[row][column] = CRGB::Black;
     }
   }
   transform();
+
   fadeleds();
   FastLED.show();
-  //delay(100);
-}
 
-
-
-// Run once from setup, the compute the vertical levels
-void computeVerticalLevels() {
-  unsigned int y;
-  float n, logLevel, linearLevel;
-
-  for (y = 0; y < matrix_height; y++) {
-    n = (float)y / (float)(matrix_height - 1);
-    logLevel = pow10f(n * -1.0 * (dynamicRange / 20.0));
-    linearLevel = 1.0 - n;
-    linearLevel = linearLevel * linearBlend;
-    logLevel = logLevel * (1.0 - linearBlend);
-    thresholdVertical[y] = (logLevel + linearLevel) * maxLevel;
-  }
+  //fill_solid(tempLeds, CRGB::Black);
+  delay(50);
 }
 
 void transform()
@@ -184,13 +206,3 @@ void transform()
     }
   }
 }
-
-void black()
-{
-  for (int i = 0 ; i < numLed ; i++)
-  {
-    showLeds[i] = CRGB::Black;
-  }
-}
-
-
