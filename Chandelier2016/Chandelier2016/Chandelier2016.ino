@@ -97,8 +97,7 @@ void loop()
   {
     mode = Serial.read();
   }
-
-  checkProgram();
+  checkProgram(mode);
 
   //columnsAndRows();
   //rainbowColumns();

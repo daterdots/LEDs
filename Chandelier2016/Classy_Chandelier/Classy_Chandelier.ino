@@ -27,9 +27,10 @@ void winker();
 
 uint8_t brightness = 16;
 uint8_t delayTime = 128;
-uint8_t* currentKnob = &brightness;
+uint8_t increment = 8;
 
-void (*currentProgram)();
+uint8_t* currentKnob = &brightness; //this is a knob pointer that points to the value I want to increment
+void (*currentProgram)(); //this is a function pointer that points to the animation I want to run
 
 CRGB currentColor = CRGB::Purple ;
 
@@ -90,9 +91,6 @@ void loop() {
     runCommand( Serial.read() );
   }
 
-  Serial.println(brightness);
-  Serial.println("test");
-
   runProgram();
 
 }
@@ -101,33 +99,53 @@ void runCommand(char command)
 {
   if ( command == '+' || command ==  '=' )
   {
-    *currentKnob += 16;
     Serial.println("turn it up");
+
+    if (*currentKnob >= 248)
+    {
+      *currentKnob = 248 ;
+    }
+    else
+    {
+      *currentKnob += increment ;
+    }
   }
 
   else if ( command == '-' || command ==  '_' )
   {
-    *currentKnob -= 16;
     Serial.println("turn it down");
+
+    if (*currentKnob == 0)
+    {
+      *currentKnob = 0 ;
+    }
+    else
+    {
+      *currentKnob -= increment ;
+    }
   }
 
   else if ( command == 'd' ) //d for delayTime
   {
     currentKnob = &delayTime; // change where the pointer points
+    Serial.println("delay time");
   }
 
   else if ( command == 'b' )
   {
     currentKnob = &brightness; // change where the pointer points
+    Serial.println("brightness");
   }
 
   else if ( command == 'B' )
   {
     currentProgram = &blinker;
+    Serial.println("Blinker");
   }
   else if ( command == 'W' )
   {
     currentProgram = &winker;
+    Serial.println("Winker");
   }
 }
 
@@ -140,7 +158,7 @@ void runProgram()
 
 void blinker()
 {
-  Serial.println("In blinker");
+  //Serial.println("In blinker");
   fill_solid(showLeds, numLed, currentColor);
   delay(delayTime);
   FastLED.show();
@@ -151,7 +169,7 @@ void blinker()
 
 void winker()
 {
-  Serial.println("In blinker");
+  //Serial.println("In winker");
   fill_solid(showLeds, numLed, currentColor);
   delay(delayTime);
   FastLED.show();
