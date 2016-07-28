@@ -29,7 +29,7 @@ const unsigned int myColor = 0x400020;
 uint8_t globalBrightness = 128;
 uint8_t numStrandStrip = 4;
 
-int spreadFade = 100;
+int spreadFade = 250;
 
 int spins = 0;
 int theta = 0;
@@ -98,7 +98,7 @@ void setup() {
 void fadeall()
 {
   for (int i = 0; i < numLed; i++) {
-    showLeds[i].nscale8(250);
+    showLeds[i].nscale8(230);
   }
 }
 
@@ -106,7 +106,7 @@ void fadeleds()
 {
   for (int row = 0; row < numLedStrand; row++) {
     for (int column = 0; column < numStrand; column++) {
-      leds[row][column].nscale8(252);
+      leds[row][column].nscale8(230);
     }
   }
 }
@@ -115,7 +115,7 @@ void fadeTempLeds()
 {
   for (int row = 0; row < numLedStrand; row++) {
     for (int column = 0; column < numStrand; column++) {
-      tempLeds[row][column].nscale8(40);
+      tempLeds[row][column].nscale8(35);
     }
   }
 }
@@ -125,9 +125,9 @@ void loop() {
   {
     for (int row = 0; row < numLedStrand; row++)
     {
-      if (random8() > 252 && random8() > 252)
+      if (random8() > 250 && random8() > 250)
       {
-        leds[row][column] += CHSV{random(0,255), random8(), 255};
+        leds[row][column] = CHSV{random(0,255), random8(), 255};
       }
 
       if (row > 1 && row < numLedStrand - 2 && column > 0 && column < numStrand - 1 )
@@ -164,9 +164,7 @@ void loop() {
           tempLeds[row - 2][column + 1] += leds[row][column];
           tempLeds[row + 2][column + 1] += leds[row][column];
         }
-
-
-        //tempLeds[row][column] += leds[row][column];
+        tempLeds[row][column] += leds[row][column];
       }
     }
   }
@@ -180,12 +178,9 @@ void loop() {
     }
   }
   transform();
-
   fadeleds();
-  FastLED.show();
-
-  //fill_solid(tempLeds, CRGB::Black);
   delay(50);
+  FastLED.show();
 }
 
 void transform()

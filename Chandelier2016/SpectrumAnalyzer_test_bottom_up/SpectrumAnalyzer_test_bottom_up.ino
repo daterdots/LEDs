@@ -12,19 +12,17 @@ float maxarr(float arr[]);
 void computeVerticalLevels();
 void transform();
 void transformTemp();
-void black();
+//void black();
 void spin();
 void printFFT();
 void fadeleds();
 
-
-
 // The display size and color to use
-const unsigned int matrix_width = 32;
-const unsigned int matrix_height = 75;
+const unsigned int numStrand = 32;
+const unsigned int numLedStrand = 75;
 const unsigned int myColor = 0x400020;
 
-void transform(CRGB ledMatrix[matrix_height][matrix_width]);
+void transform(CRGB ledMatrix[numLedStrand][numStrand]);
 
 #define BRIGHTNESS  255
 #define numStrip 8          //strips are contiguous physical LED chains
@@ -60,13 +58,13 @@ AudioConnection          patchCord1(adc1, fft);
 // This array holds the volume level (0 to 1.0) for each
 // vertical pixel to turn on.  Computed in setup() using
 // the 3 parameters above.
-float thresholdVertical[matrix_height];
+float thresholdVertical[numLedStrand];
 
 // This array specifies how many of the FFT frequency bin
 // to use for each horizontal pixel.  Because humans hear
 // in octaves and FFT bins are linear, the low frequencies
 // use a small number of bins, higher frequencies use more.
-int frequencyBinsHorizontal[matrix_width + 1] = {
+int frequencyBinsHorizontal[numStrand + 1] = {
   1,
   1,
   1,
@@ -124,7 +122,7 @@ void loop() {
     if (fft.available())
     {
       freqBin = 2; //ignore the first two bins which contain DC offsets
-      for (x = 0; x < matrix_width; x++) {
+      for (x = 0; x < numStrand; x++) {
         levels[x] = fft.read(freqBin, freqBin + frequencyBinsHorizontal[x] - 1);
         freqBin = freqBin + frequencyBinsHorizontal[x];
       }
@@ -142,7 +140,7 @@ void loop() {
     Serial.println(peakLevel);
 
     //relativeLevels = levels / peakLevel ;
-    for (x = 0; x < matrix_width; x++) {
+    for (x = 0; x < numStrand; x++) {
       relativeLevels[x] = levels[x] / peakLevel ;
     }
     peakLevel = peakLevel - peakLevel / levelForget;
@@ -178,7 +176,7 @@ void loop() {
   }
 }
 
-void transform(CRGB ledMatrix[matrix_height][matrix_width])
+void transform(CRGB ledMatrix[numLedStrand][numStrand])
 {
   for (int column = 0; column < numStrand; column++)
   {
@@ -218,7 +216,7 @@ void black()
 }
 
 void printFFT() {
-  for (int i = 0; i < matrix_width; i++) {
+  for (int i = 0; i < numStrand; i++) {
     if (relativeLevels[i] > 0.1)
     {
       Serial.print(" ");

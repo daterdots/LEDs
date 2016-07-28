@@ -93,14 +93,14 @@ void setup()
 
 void loop()
 {
-  while ( Serial.available() > 0 )
-  {
-    mode = Serial.read();
-  }
-  checkProgram(mode);
+//  while ( Serial.available() > 0 )
+//  {
+//    mode = Serial.read();
+//  }
+//  checkProgram(mode);
 
   //columnsAndRows();
-  //rainbowColumns();
+  rainbowColumns();
   //america();
   //spiral();
   //hula();
@@ -145,13 +145,14 @@ void rainbowColumns()
     for (int column = 0; column < numStrand; column++)
     {
       CRGB tempLeds[numLedStrand];
-      fill_rainbow (tempLeds, numLedStrand, hue, 10 );
+      fill_rainbow (tempLeds, numLedStrand, hue, 2 );
       for ( int row = 0; row < numLedStrand; row++ )
       {
         leds[row][column] = tempLeds[row];
       }
     }
     transform(leds);
+    delay(20);
     FastLED.show();
     //delay(10);
   }
@@ -383,16 +384,16 @@ void fadeleds()
   }
 }
 
-void checkProgram() {
-  switch (mode)
-  {
-    case c:
-      cylon();
-      break;
-
-    case 1:
-      stochasticChill();
-      break;
-
-  }
-}
+//void checkProgram() {
+//  switch (mode)
+//  {
+//    case c:
+//      cylon();
+//      break;
+//
+//    case 1:
+//      stochasticChill();
+//      break;
+//
+//  }
+//}
